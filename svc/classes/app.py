@@ -18,7 +18,7 @@ class App:
         canvas = tk.Canvas(root, width=400, height=300)
         # canvas.pack()
 
-        img = tk.PhotoImage(file=r"C:\Users\Vitor Lamoya\Downloads\logo.png")
+        img = tk.PhotoImage(file=r"svc/img/logo.png")
         img = img.subsample(1, 3)
 
         # Mantém a referência da imagem
