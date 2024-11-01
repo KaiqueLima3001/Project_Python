@@ -1,5 +1,8 @@
 import tkinter as tk
+from tkinter import messagebox
 from .estoque import Estoque
+from .produto import Produto
+from .bancodedados import BancoDeDados
 
 class App:
     def __init__(self, root):
@@ -53,11 +56,21 @@ class App:
         self.show_frame(self.home_frame)
 
     def create_home_page(self):
-        label = tk.Label(self.home_frame, text="Página de Produtos", font=("Arial", 16, "bold"), bg="#6597ce")
-        label.pack(pady=20)
+        try:
+            canvas2 = tk.Canvas(self.home_frame, width=400, height=300)
+            home_img = tk.PhotoImage(file=r"svc/img/logo.png")
 
-        back_button = tk.Button(self.home_frame, text="Voltar para Início", command=lambda: self.show_frame(self.home_frame))
-        back_button.pack(pady=10)
+            label_imagem = tk.Label(self.home_frame, image=home_img) # Cria um label para exibir a imagem
+            canvas2.image = home_img # Mantém a referência da imagem
+            label_imagem.pack(fill=tk.BOTH, expand=True)
+        except Exception as e:
+            print(f"Erro ao carregar a imagem: {e}")
+
+        label = tk.Label(self.home_frame, text="Página de Produtos", font=("Arial", 16, "bold"), fg="red")
+        label.place(relx=0.5, rely=0.2, anchor='center') 
+
+        back_button = tk.Button(self.home_frame, text="Ir para o Estoque", command=lambda: self.show_frame(self.stock_frame))
+        back_button.place(relx=0.5, rely=0.8, anchor='center')
 
         self.home_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -124,10 +137,56 @@ class App:
             tk.Label(frame_item, text=item.tipo, font=("Arial", 12), bg=cor_fundo).place(x=640, y=10)
             tk.Label(frame_item, text=item.quantidade, font=("Arial", 12), bg=cor_fundo).place(x=960, y=10)
 
+            # Adicionando a lógica de edição
+            btn_editar = tk.Button(frame_item, text="Editar", bg="#f5b7b1", command=lambda item=item: self.editar_produto(item))
+            btn_editar.place(x=1160, y=10)
+
             # Adicionando a lógica de exclusão
             btn_excluir = tk.Button(frame_item, text="Excluir", bg="#f5b7b1", command=lambda id=item.id: self.excluir_produto(id))
             btn_excluir.place(x=1320, y=10)
 
     def excluir_produto(self, produto_id):
-        Estoque.excluir_produto(produto_id)
+        resposta = messagebox.askyesno("Confirmar Exclusão", "Tem certeza que deseja excluir este produto?")
+        
+        if resposta:
+            Estoque.excluir_produto(produto_id)
         self.atualizar_produtos()  # Atualiza a lista de produtos após a exclusão
+        
+    def editar_produto(self, produto):
+        label_edit = tk.Toplevel(self.root)
+        label_edit.title("Editar Produto")
+        label_edit.geometry("300x200")
+
+        tk.Label(label_edit, text="Nome:").grid(row=0, column=0, padx=10, pady=10)
+        nome_entry = tk.Entry(label_edit)
+        nome_entry.insert(0, produto.nome)
+        nome_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(label_edit, text="Tipo:").grid(row=1, column=0, padx=10, pady=10)
+        tipo_entry = tk.Entry(label_edit)
+        tipo_entry.insert(0, produto.tipo)
+        tipo_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Label(label_edit, text="Quantidade:").grid(row=2, column=0, padx=10, pady=10)
+        quantidade_entry = tk.Entry(label_edit)
+        quantidade_entry.insert(0, produto.quantidade)
+        quantidade_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        def salvar_edicao():
+            # Atualiza o produto no banco de dados e na lista
+            produto.nome = nome_entry.get()
+            produto.tipo = tipo_entry.get()
+            produto.quantidade = int(quantidade_entry.get())
+            
+            # Atualiza no banco de dados
+            db = BancoDeDados('produtos.db')
+            db.cursor.execute('UPDATE produtos SET nome = ?, tipo = ?, quantidade = ? WHERE id = ?', (produto.nome, produto.tipo, produto.quantidade, produto.id))
+            db.conn.commit()
+            db.fechar_conexao()
+
+            # Atualiza a interface
+            self.atualizar_produtos()
+            label_edit.destroy()
+
+        bnt_salvar = tk.Button(label_edit, text="Salvar", command=salvar_edicao)
+        bnt_salvar.grid(row=3, column=1, pady=20)
