@@ -11,6 +11,18 @@ class Estoque:
     @classmethod
     def getProdutos(cls):
         return cls.produtos
+    
+    @staticmethod
+    def inserir_produto(nome,tipo,quantidade,empresa):
+        db = BancoDeDados('produtos.db')
+        db.cursor.execute('''
+            INSERT INTO produtos (nome, tipo, quantidade, empresa)
+            VALUES (?, ?, ?, ?)
+        ''', (nome, tipo, quantidade, empresa))
+        db.conn.commit()
+        db.fechar_conexao()
+        # Atualize a lista de produtos após a exclusão
+        Estoque.produtos = [p for p in Estoque.produtos]
 
     @staticmethod
     def excluir_produto(produto_id):
